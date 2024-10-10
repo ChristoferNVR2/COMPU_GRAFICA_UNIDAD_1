@@ -99,11 +99,13 @@ static unsigned int CreateShader(const std::string& vertexShader, const std::str
 }
 
 double eyeX = 5.0, eyeY = 3.0, eyeZ = 5.0;
+double objX = 0.0, objY = 0.0, objZ = 0.0;
+double upX = 0.0, upY = 1.0, upZ = 0.0;
 
 glm::mat4 view = glm::lookAt(
     glm::vec3(eyeX, eyeY, eyeZ),  // Camera position
-    glm::vec3(0, 0, 0),  // Target position (where the camera looks)
-    glm::vec3(0, 1, 0)   // Up vector (defines camera's upward direction)
+    glm::vec3(objX, objY, objZ),  // Target position (where the camera looks)
+    glm::vec3(upX, upY, upZ)   // Up vector (defines camera's upward direction)
 );
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -164,7 +166,7 @@ int main() {
     if (!glfwInit())
         return -1;
 
-    GLFWwindow* window = glfwCreateWindow(640, 480, "3D Scene", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(1920, 1080, "3D Scene", nullptr, nullptr);
     if (!window) {
         glfwTerminate();
         return -1;
@@ -297,7 +299,7 @@ int main() {
     ShaderProgramSource srcPyramid = ParseShader("res/shaders/Cube.shader");
     unsigned int pyramidShader = CreateShader(srcPyramid.VertexSource, srcPyramid.FragmentSource);
 
-    glm::mat4 proj = glm::perspective(glm::radians(45.0f), 640.0f / 480.0f, 0.1f, 100.0f);
+    glm::mat4 proj = glm::perspective(glm::radians(45.0f), 1920.0f / 1080.0f, 0.1f, 100.0f);
 
     glm::mat4 cubeModel = glm::mat4(1.0f);
     glm::mat4 cubeMvp = proj * view * cubeModel;
