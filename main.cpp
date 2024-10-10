@@ -98,15 +98,79 @@ static unsigned int CreateShader(const std::string& vertexShader, const std::str
     return program;
 }
 
+double eyeX = 5.0, eyeY = 3.0, eyeZ = 5.0;
+
+glm::mat4 view = glm::lookAt(
+    glm::vec3(eyeX, eyeY, eyeZ),  // Camera position
+    glm::vec3(0, 0, 0),  // Target position (where the camera looks)
+    glm::vec3(0, 1, 0)   // Up vector (defines camera's upward direction)
+);
+
+void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, GLFW_TRUE);  // Close the window when ESC is pressed
+    }
+    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
+        eyeY += 0.5;
+        view = glm::lookAt(
+            glm::vec3(eyeX, eyeY, eyeZ),
+            glm::vec3(0, 0, 0),
+            glm::vec3(0, 1, 0)
+        );
+    }
+    if (key == GLFW_KEY_LEFT_CONTROL && action == GLFW_PRESS) {
+        eyeY -= 0.5;
+        view = glm::lookAt(
+            glm::vec3(eyeX, eyeY, eyeZ),
+            glm::vec3(0, 0, 0),
+            glm::vec3(0, 1, 0)
+        );
+    }
+    if (key == GLFW_KEY_W && action == GLFW_PRESS) {
+        eyeZ -= 0.5;
+        view = glm::lookAt(
+            glm::vec3(eyeX, eyeY, eyeZ),
+            glm::vec3(0, 0, 0),
+            glm::vec3(0, 1, 0)
+        );
+    }
+    if (key == GLFW_KEY_S && action == GLFW_PRESS) {
+        eyeZ += 0.5;
+        view = glm::lookAt(
+            glm::vec3(eyeX, eyeY, eyeZ),
+            glm::vec3(0, 0, 0),
+            glm::vec3(0, 1, 0)
+        );
+    }
+    if (key == GLFW_KEY_A && action == GLFW_PRESS) {
+        eyeX -= 0.5;
+        view = glm::lookAt(
+            glm::vec3(eyeX, eyeY, eyeZ),
+            glm::vec3(0, 0, 0),
+            glm::vec3(0, 1, 0)
+        );
+    }
+    if (key == GLFW_KEY_D && action == GLFW_PRESS) {
+        eyeX += 0.5;
+        view = glm::lookAt(
+            glm::vec3(eyeX, eyeY, eyeZ),
+            glm::vec3(0, 0, 0),
+            glm::vec3(0, 1, 0)
+        );
+    }
+}
+
 int main() {
     if (!glfwInit())
         return -1;
 
-    GLFWwindow* window = glfwCreateWindow(640, 480, "3D Cube", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(640, 480, "3D Scene", nullptr, nullptr);
     if (!window) {
         glfwTerminate();
         return -1;
     }
+
+    glfwSetKeyCallback(window, keyCallback);
 
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
@@ -119,7 +183,8 @@ int main() {
     // Enable depth test for correct 3D rendering
     glEnable(GL_DEPTH_TEST);
 
-    float positions[] = {
+    // Cube vertices and indices
+    float cubePositions[] = {
         // Front face
         -0.5f, -0.5f,  0.5f,
          0.5f, -0.5f,  0.5f,
@@ -132,7 +197,7 @@ int main() {
         -0.5f,  0.5f, -0.5f
     };
 
-    unsigned int indices[] = {
+    unsigned int cubeIndices[] = {
         // Front
         0, 1, 2, 2, 3, 0,
         // Back
@@ -147,39 +212,58 @@ int main() {
         0, 1, 5, 5, 4, 0
     };
 
-    unsigned int vao, vbo, ibo;
-    GLCall(glGenVertexArrays(1, &vao));
-    GLCall(glBindVertexArray(vao));
+    unsigned int cubeVao, cubeVbo, cubeIbo;
+    GLCall(glGenVertexArrays(1, &cubeVao));
+    GLCall(glBindVertexArray(cubeVao));
 
-    GLCall(glGenBuffers(1, &vbo));
-    GLCall(glBindBuffer(GL_ARRAY_BUFFER, vbo));
-    GLCall(glBufferData(GL_ARRAY_BUFFER, sizeof(positions), positions, GL_STATIC_DRAW));
+    GLCall(glGenBuffers(1, &cubeVbo));
+    GLCall(glBindBuffer(GL_ARRAY_BUFFER, cubeVbo));
+    GLCall(glBufferData(GL_ARRAY_BUFFER, sizeof(cubePositions), cubePositions, GL_STATIC_DRAW));
 
     GLCall(glEnableVertexAttribArray(0));
     GLCall(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr));
 
-    GLCall(glGenBuffers(1, &ibo));
-    GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo));
-    GLCall(glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW));
+    GLCall(glGenBuffers(1, &cubeIbo));
+    GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIbo));
+    GLCall(glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIndices), cubeIndices, GL_STATIC_DRAW));
 
-    ShaderProgramSource srcCube = ParseShader("res/shaders/Cube.shader");
-    unsigned int cubeShader = CreateShader(srcCube.VertexSource, srcCube.FragmentSource);
-    GLCall(glUseProgram(cubeShader));
+    // Pyramid vertices and indices
+    float pyramidPositions[] = {
+        // Base
+        -0.5f, 0.0f, -0.5f,
+         0.5f, 0.0f, -0.5f,
+         0.5f, 0.0f,  0.5f,
+        -0.5f, 0.0f,  0.5f,
+        // Apex
+         0.0f, 1.0f,  0.0f
+    };
 
-    glm::mat4 proj = glm::perspective(glm::radians(45.0f), 640.0f / 480.0f, 0.1f, 100.0f);
-    glm::mat4 view = glm::lookAt(
-        glm::vec3(5, 3, 5),  // Camera position
-        glm::vec3(0, 0, 0),     // Target position (where the camera looks)
-        glm::vec3(0, 1, 0)      // Up vector (defines camera's upward direction)
-    );
-    // glm::mat4 model = glm::rotate(glm::mat4(1.0f), static_cast<float>(glfwGetTime()), glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 model = glm::mat4(1.0f);
-    glm::mat4 mvp = proj * view * model;
-    glm::mat4 mvpAxes = proj * view;
+    unsigned int pyramidIndices[] = {
+        // Base
+        0, 1, 2, 2, 3, 0,
+        // Sides
+        0, 1, 4,
+        1, 2, 4,
+        2, 3, 4,
+        3, 0, 4
+    };
 
-    int mvpLocation = glGetUniformLocation(cubeShader, "u_MVP");
+    unsigned int pyramidVao, pyramidVbo, pyramidIbo;
+    GLCall(glGenVertexArrays(1, &pyramidVao));
+    GLCall(glBindVertexArray(pyramidVao));
 
-    // Add these vertices for the axes
+    GLCall(glGenBuffers(1, &pyramidVbo));
+    GLCall(glBindBuffer(GL_ARRAY_BUFFER, pyramidVbo));
+    GLCall(glBufferData(GL_ARRAY_BUFFER, sizeof(pyramidPositions), pyramidPositions, GL_STATIC_DRAW));
+
+    GLCall(glEnableVertexAttribArray(0));
+    GLCall(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr));
+
+    GLCall(glGenBuffers(1, &pyramidIbo));
+    GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pyramidIbo));
+    GLCall(glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(pyramidIndices), pyramidIndices, GL_STATIC_DRAW));
+
+    // Axes vertices
     float axes[] = {
         // X axis (red)
         0.0f, 0.0f, 0.0f,
@@ -203,28 +287,58 @@ int main() {
     GLCall(glEnableVertexAttribArray(0));
     GLCall(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr));
 
+    // Load shaders
+    ShaderProgramSource srcCube = ParseShader("res/shaders/Cube.shader");
+    unsigned int cubeShader = CreateShader(srcCube.VertexSource, srcCube.FragmentSource);
+
     ShaderProgramSource srcAxes = ParseShader("res/shaders/Axes.shader");
     unsigned int axesShader = CreateShader(srcAxes.VertexSource, srcAxes.FragmentSource);
 
+    ShaderProgramSource srcPyramid = ParseShader("res/shaders/Cube.shader");
+    unsigned int pyramidShader = CreateShader(srcPyramid.VertexSource, srcPyramid.FragmentSource);
+
+    glm::mat4 proj = glm::perspective(glm::radians(45.0f), 640.0f / 480.0f, 0.1f, 100.0f);
+
+    glm::mat4 cubeModel = glm::mat4(1.0f);
+    glm::mat4 cubeMvp = proj * view * cubeModel;
+
+    glm::mat4 pyramidModel = glm::translate(glm::mat4(1.0f), glm::vec3(2.5f, 0.0f, 1.0f));
+    // glm::mat4 pyramidModel = glm::mat4(1.0f);
+    glm::mat4 pyramidModelTranslation = glm::translate(glm::mat4(1.0f), glm::vec3(2.5f, 0.0f, 1.0f));
+    glm::mat4 pyramidMvp = proj * view * pyramidModel;
+
+    glm::mat4 axesMvp = proj * view;
+
+    int mvpLocationCube = glGetUniformLocation(cubeShader, "u_MVP");
+    int mvpLocationPyramid = glGetUniformLocation(pyramidShader, "u_MVP");
 
     while (!glfwWindowShouldClose(window)) {
         GLCall(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-        // model = glm::rotate(glm::mat4(1.0f), static_cast<float>(glfwGetTime()), glm::vec3(0.0f, 1.0f, 0.0f));
-        mvp = proj * view * model;
-
         // Draw the cube
+        // cubeModel = glm::rotate(glm::mat4(1.0f), static_cast<float>(glfwGetTime()), glm::vec3(0.0f, 1.0f, 0.0f));
+        cubeMvp = proj * view * cubeModel;
         GLCall(glUseProgram(cubeShader));
-        GLCall(glBindVertexArray(vao));
-        GLCall(glUniformMatrix4fv(mvpLocation, 1, GL_FALSE, glm::value_ptr(mvp)));
-
+        GLCall(glBindVertexArray(cubeVao));
+        GLCall(glUniformMatrix4fv(mvpLocationCube, 1, GL_FALSE, glm::value_ptr(cubeMvp)));
         GLCall(glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr));
 
+
+        // Draw the pyramid
+        // pyramidModel = glm::rotate(glm::mat4(1.0f), static_cast<float>(glfwGetTime()), glm::vec3(0.0f, 1.0f, 0.0f)) * pyramidModelTranslation;
+        // pyramidModel = pyramidModelTranslation * glm::rotate(glm::mat4(1.0f), static_cast<float>(glfwGetTime()), glm::vec3(0.0f, 1.0f, 0.0f));
+        pyramidMvp = proj * view * pyramidModel;
+        GLCall(glUseProgram(pyramidShader));
+        GLCall(glBindVertexArray(pyramidVao));
+        GLCall(glUniformMatrix4fv(mvpLocationPyramid, 1, GL_FALSE, glm::value_ptr(pyramidMvp)));
+        GLCall(glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_INT, nullptr));
+
         // Draw the axes
+        axesMvp = proj * view;
         GLCall(glUseProgram(axesShader));
         GLCall(glBindVertexArray(axesVao));
         int axesMvpLocation = glGetUniformLocation(axesShader, "u_MVP");
-        GLCall(glUniformMatrix4fv(axesMvpLocation, 1, GL_FALSE, glm::value_ptr(mvpAxes)));
+        GLCall(glUniformMatrix4fv(axesMvpLocation, 1, GL_FALSE, glm::value_ptr(axesMvp)));
 
         // Draw X axis in red
         int colorLocation = glGetUniformLocation(axesShader, "u_Color");
@@ -244,6 +358,7 @@ int main() {
     }
 
     glDeleteProgram(cubeShader);
+    glDeleteProgram(pyramidShader);
     glDeleteProgram(axesShader);
     glfwTerminate();
     return 0;

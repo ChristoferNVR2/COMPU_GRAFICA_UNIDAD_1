@@ -17,3 +17,5 @@ dataSources.local.xml
 
 # CMake build directory
 cmake-build-debug/
+
+.vscode/*
