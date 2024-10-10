@@ -167,10 +167,15 @@ int main() {
     GLCall(glUseProgram(cubeShader));
 
     glm::mat4 proj = glm::perspective(glm::radians(45.0f), 640.0f / 480.0f, 0.1f, 100.0f);
-    glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -3));
+    glm::mat4 view = glm::lookAt(
+        glm::vec3(5, 3, 5),  // Camera position
+        glm::vec3(0, 0, 0),     // Target position (where the camera looks)
+        glm::vec3(0, 1, 0)      // Up vector (defines camera's upward direction)
+    );
     // glm::mat4 model = glm::rotate(glm::mat4(1.0f), static_cast<float>(glfwGetTime()), glm::vec3(0.0f, 1.0f, 0.0f));
     glm::mat4 model = glm::mat4(1.0f);
     glm::mat4 mvp = proj * view * model;
+    glm::mat4 mvpAxes = proj * view;
 
     int mvpLocation = glGetUniformLocation(cubeShader, "u_MVP");
 
@@ -178,13 +183,13 @@ int main() {
     float axes[] = {
         // X axis (red)
         0.0f, 0.0f, 0.0f,
-        1.0f, 0.0f, 0.0f,
+        3.0f, 0.0f, 0.0f,
         // Y axis (green)
         0.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f,
+        0.0f, 3.0f, 0.0f,
         // Z axis (blue)
         0.0f, 0.0f, 0.0f,
-        0.0f, 0.0f, 1.0f
+        0.0f, 0.0f, 3.0f
     };
 
     unsigned int axesVao, axesVbo;
@@ -205,7 +210,7 @@ int main() {
     while (!glfwWindowShouldClose(window)) {
         GLCall(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-        model = glm::rotate(glm::mat4(1.0f), static_cast<float>(glfwGetTime()), glm::vec3(0.0f, 1.0f, 0.0f));
+        // model = glm::rotate(glm::mat4(1.0f), static_cast<float>(glfwGetTime()), glm::vec3(0.0f, 1.0f, 0.0f));
         mvp = proj * view * model;
 
         // Draw the cube
@@ -219,7 +224,7 @@ int main() {
         GLCall(glUseProgram(axesShader));
         GLCall(glBindVertexArray(axesVao));
         int axesMvpLocation = glGetUniformLocation(axesShader, "u_MVP");
-        GLCall(glUniformMatrix4fv(axesMvpLocation, 1, GL_FALSE, glm::value_ptr(mvp)));
+        GLCall(glUniformMatrix4fv(axesMvpLocation, 1, GL_FALSE, glm::value_ptr(mvpAxes)));
 
         // Draw X axis in red
         int colorLocation = glGetUniformLocation(axesShader, "u_Color");
