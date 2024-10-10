@@ -56,7 +56,10 @@ static ShaderProgramSource ParseShader(const std::string& filepath) {
             ss[static_cast<int>(type)] << line << '\n';
         }
     }
-    return { ss[0].str(), ss[1].str() };
+    return {
+        ss[static_cast<int>(ShaderType::VERTEX)].str(),
+        ss[static_cast<int>(ShaderType::FRAGMENT)].str()
+    };
 }
 
 static unsigned int CompileShader(unsigned int type, const std::string& source) {
@@ -159,32 +162,84 @@ int main() {
     GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo));
     GLCall(glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW));
 
-    ShaderProgramSource source = ParseShader("res/shaders/Basic.shader");
-    unsigned int shader = CreateShader(source.VertexSource, source.FragmentSource);
-    GLCall(glUseProgram(shader));
+    ShaderProgramSource srcCube = ParseShader("res/shaders/Cube.shader");
+    unsigned int cubeShader = CreateShader(srcCube.VertexSource, srcCube.FragmentSource);
+    GLCall(glUseProgram(cubeShader));
 
     glm::mat4 proj = glm::perspective(glm::radians(45.0f), 640.0f / 480.0f, 0.1f, 100.0f);
     glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, -3));
-    glm::mat4 model = glm::rotate(glm::mat4(1.0f), static_cast<float>(glfwGetTime()), glm::vec3(0.5f, 1.0f, 0.0f));
+    // glm::mat4 model = glm::rotate(glm::mat4(1.0f), static_cast<float>(glfwGetTime()), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 model = glm::mat4(1.0f);
     glm::mat4 mvp = proj * view * model;
 
-    int mvpLocation = glGetUniformLocation(shader, "u_MVP");
-    GLCall(glUniformMatrix4fv(mvpLocation, 1, GL_FALSE, glm::value_ptr(mvp)));
+    int mvpLocation = glGetUniformLocation(cubeShader, "u_MVP");
+
+    // Add these vertices for the axes
+    float axes[] = {
+        // X axis (red)
+        0.0f, 0.0f, 0.0f,
+        1.0f, 0.0f, 0.0f,
+        // Y axis (green)
+        0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f, 0.0f,
+        // Z axis (blue)
+        0.0f, 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f
+    };
+
+    unsigned int axesVao, axesVbo;
+    GLCall(glGenVertexArrays(1, &axesVao));
+    GLCall(glBindVertexArray(axesVao));
+
+    GLCall(glGenBuffers(1, &axesVbo));
+    GLCall(glBindBuffer(GL_ARRAY_BUFFER, axesVbo));
+    GLCall(glBufferData(GL_ARRAY_BUFFER, sizeof(axes), axes, GL_STATIC_DRAW));
+
+    GLCall(glEnableVertexAttribArray(0));
+    GLCall(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr));
+
+    ShaderProgramSource srcAxes = ParseShader("res/shaders/Axes.shader");
+    unsigned int axesShader = CreateShader(srcAxes.VertexSource, srcAxes.FragmentSource);
+
 
     while (!glfwWindowShouldClose(window)) {
         GLCall(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
-        model = glm::rotate(glm::mat4(1.0f), static_cast<float>(glfwGetTime()), glm::vec3(0.5f, 1.0f, 0.0f));
+        model = glm::rotate(glm::mat4(1.0f), static_cast<float>(glfwGetTime()), glm::vec3(0.0f, 1.0f, 0.0f));
         mvp = proj * view * model;
+
+        // Draw the cube
+        GLCall(glUseProgram(cubeShader));
+        GLCall(glBindVertexArray(vao));
         GLCall(glUniformMatrix4fv(mvpLocation, 1, GL_FALSE, glm::value_ptr(mvp)));
 
         GLCall(glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr));
+
+        // Draw the axes
+        GLCall(glUseProgram(axesShader));
+        GLCall(glBindVertexArray(axesVao));
+        int axesMvpLocation = glGetUniformLocation(axesShader, "u_MVP");
+        GLCall(glUniformMatrix4fv(axesMvpLocation, 1, GL_FALSE, glm::value_ptr(mvp)));
+
+        // Draw X axis in red
+        int colorLocation = glGetUniformLocation(axesShader, "u_Color");
+        GLCall(glUniform4f(colorLocation, 1.0f, 0.0f, 0.0f, 1.0f));
+        GLCall(glDrawArrays(GL_LINES, 0, 2));
+
+        // Draw Y axis in green
+        GLCall(glUniform4f(colorLocation, 0.0f, 1.0f, 0.0f, 1.0f));
+        GLCall(glDrawArrays(GL_LINES, 2, 2));
+
+        // Draw Z axis in blue
+        GLCall(glUniform4f(colorLocation, 0.0f, 0.0f, 1.0f, 1.0f));
+        GLCall(glDrawArrays(GL_LINES, 4, 2));
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    glDeleteProgram(shader);
+    glDeleteProgram(cubeShader);
+    glDeleteProgram(axesShader);
     glfwTerminate();
     return 0;
 }
